@@ -1,4 +1,5 @@
 import sys
+import json
 
 # outline contains "_" for wildcard characters. Ex) "am_e_"
 def followsOutline(word, outline):
@@ -23,23 +24,44 @@ def doesNotContainChars(word, chars):
 			return False
 	return True
 
+def generatePossibleWords(engDict, outline, knownLetters, disallowedLetters):
+	words = filter(lambda word: word.islower() and word.isalpha(), engDict)
+
+	words = filter(lambda word: len(word) == len(outline), words)
+	words = filter(lambda word: followsOutline(word, outline), words)
+	words = filter(lambda word: containsChars(word, knownLetters), words)
+	words = filter(lambda word: doesNotContainChars(word, disallowedLetters), words)
+	return list(words)
+
+# Assumes length of word in words is equal to length of outline
+def guess(words, letterFreq, outline):
+	highestScore = 0
+	bestWord = ""
+	for word in words:
+		score = 0
+		for i in range(len(outline)):
+			if outline[i] == "_":
+				score = score + letterFreq[word[i]]
+		if score > highestScore:
+			highestScore = score
+			bestWord = word
+	if highestScore == 0:
+		return
+	return bestWord
+
 
 def main():
 	outline = sys.argv[1]
 	knownLetters = sys.argv[2]
 	disallowedLetters = sys.argv[3]
 
-	words = [word.strip().lower() for word in open("dictionary.txt")]
-	
-	words = filter(lambda word: word.islower() and word.isalpha(), words)
-	words = filter(lambda word: len(word) == 5, words)
-	words = filter(lambda word: followsOutline(word, outline), words)
-	words = filter(lambda word: containsChars(word, knownLetters), words)
-	words = filter(lambda word: doesNotContainChars(word, disallowedLetters), words)
+	engDict = [word.strip().lower() for word in open("dictionary.txt")]
+	letterFreq = json.load(open("letter_freq.json"))
 
-	for word in words:
-		print(word)
+	words = generatePossibleWords(engDict, outline, knownLetters, disallowedLetters)
+	print(words)
+	word = guess(words, letterFreq, outline)
+	print(word)
 	
-
 if __name__ == "__main__":
     main()
